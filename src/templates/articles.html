@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Articles</h1>
+{% for articles in articles %}
+  {{articles.title, articles.Author}}
+
+{% endfor %}
+{% endblock %}
