@@ -4,7 +4,7 @@
   <h1>Articles</h1>
 <ul class="list-group">
 {% for arti in articles %}
-    <li class="list-group-item"><a href="articles/{{arti.id}}">
+    <li class="list-group-item"><a href="article/{{arti.id}}">
         {{arti.title, arti.body, arti.Author}}</a>
     </li>
 {% endfor %}
