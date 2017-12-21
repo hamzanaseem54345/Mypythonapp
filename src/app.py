@@ -2,9 +2,10 @@ from flask import Flask,request,render_template,flash,redirect,session,url_for,l
 from data import Articles
 from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
+from functools import wraps
 
 #from MySQLdb.cursors import DictCursor
-from wtforms import Form,StringField,TextAreaField,PasswordField,validators
+from wtforms import Form,StringField,TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
 
 #from flask_sqlalchemy import SQLAlchemy
@@ -41,7 +42,7 @@ def articles():
 def article(idnumber):
     return render_template("article.html", idno=idnumber)
 
-
+#Register Form
 class RegisterForm(Form):
     name = StringField('Name',[validators.Length(min=1, max=30)])
     username = StringField('Username',[validators.Length(min=4, max=25)])
@@ -52,7 +53,7 @@ class RegisterForm(Form):
     ])
     confirm = PasswordField('Confirm Password')
 
-
+#Register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm(request.form)
@@ -106,13 +107,53 @@ def login():
             # Compare Passwords
             if sha256_crypt.verify(password_candidate, password):
                 # Passed
+                session['logged_in'] = True
+                session['username'] = username
                 app.logger.info('Password matched')
+
+                flash('You are succesfully Logged in','success')
+                return redirect(url_for('dashboard'))
             else:
-                app.logger.info('PASSWord not matched')
+                error = 'Invalid Login'
+                return render_template('login.html', error=error)
+            #Close Connection
+            cursor.close()
         else:
-            app.logger.info('NO User')
+            error = 'Username not Found'
+            return render_template('login.html',error=error)
 
     return render_template('login.html')
+
+# Check if user Logged in
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Unauthorized, Please Login','danger')
+            return redirect(url_for('login'))
+    return wrap
+
+
+# Logout
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You are now logged out','success')
+    return redirect(url_for('login'))
+
+
+
+
+
+# Dashboard
+@app.route('/dashboard')
+@is_logged_in
+def dashboard():
+    return render_template('dashboard.html')
+
+
 
 
 if __name__ == "__main__":
