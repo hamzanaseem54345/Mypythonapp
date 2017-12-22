@@ -22,7 +22,6 @@ app.config['MYSQL_DATABASE_DB'] = 'pythondb'
 mysql.init_app(app)
 
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -42,6 +41,7 @@ def articles():
 def article(idnumber):
     return render_template("article.html", idno=idnumber)
 
+
 #Register Form
 class RegisterForm(Form):
     name = StringField('Name',[validators.Length(min=1, max=30)])
@@ -52,6 +52,7 @@ class RegisterForm(Form):
         validators.EqualTo('confirm',message='Passwords do not match')
     ])
     confirm = PasswordField('Confirm Password')
+
 
 #Register
 @app.route('/register', methods=['GET', 'POST'])
@@ -84,8 +85,7 @@ def register():
 
  #User Login
 
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', method = ['GET', 'POST'])
 def login():
     if request.method == 'POST':
         # Get Form Fields
@@ -147,12 +147,44 @@ def logout():
 
 
 
-# Dashboard
+# Dashboard Route
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
     return render_template('dashboard.html')
 
+#Articles
+class ArticleForm(Form):
+    title = StringField('Title',[validators.Length(min=1, max=300)])
+    body = TextAreaField('Body',[validators.Length(min=50)])
+
+# Article Route
+
+
+@app.route('/add_article', method =['GET','POST'])
+@is_logged_in
+def add_article():
+    form = ArticleForm(request.form)
+    if request.method == 'POST' and form.validate():
+        title=form.title.data
+        body=form.body.data
+
+        #create Cursor
+        cursor = mysql.get_db().cursor()
+
+        #Execute
+        cursor.execute("insert into articles (title,body,author) values (%s,%s,%s)", (title, body, session['name']))
+
+        #commit to DB
+        mysql.get_db().commit()
+
+        #close DB
+        cursor.close()
+
+        flash('Article Created','success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_article.html',form=form)
 
 
 
