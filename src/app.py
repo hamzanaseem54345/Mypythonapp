@@ -174,11 +174,11 @@ def add_article():
         cursor = mysql.get_db().cursor()
 
         #Execute
-        username = request.form['username']
-        result = cursor.execute("SELECT * FROM users WHERE username = %s", session['username'])
-        row = cursor.fetchone()
-        name = row['name']
-        cursor.execute("insert into articles (title,body,author) values (%s,%s,%s)", (title, body, name ))
+
+        cursor.execute("insert into articles (title,body,author) values "
+                       "(%s,%s,(select u.name from users u inner join articles a on u.id=a.id where u.username=%s))",
+                       (title, body, session['username']))
+        #cursor.execute("insert into articles(title,body,author) values(%s,%s,%s)", (title, body, session['username']))
 
         #commit to DB
         mysql.get_db().commit()
