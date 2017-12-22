@@ -55,7 +55,7 @@ class RegisterForm(Form):
 
 
 #Register
-@app.route('/register', methods=['GET', 'POST'])
+@app.route("/register", methods=['GET', 'POST'])
 def register():
     form = RegisterForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -83,9 +83,10 @@ def register():
         redirect(url_for('index'))
     return render_template('register.html', form=form)
 
+
  #User Login
 
-@app.route('/login', method = ['GET', 'POST'])
+@app.route("/login", methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         # Get Form Fields
@@ -161,7 +162,7 @@ class ArticleForm(Form):
 # Article Route
 
 
-@app.route('/add_article', method =['GET','POST'])
+@app.route('/add_article', methods=['GET', 'POST'])
 @is_logged_in
 def add_article():
     form = ArticleForm(request.form)
@@ -173,7 +174,11 @@ def add_article():
         cursor = mysql.get_db().cursor()
 
         #Execute
-        cursor.execute("insert into articles (title,body,author) values (%s,%s,%s)", (title, body, session['name']))
+        username = request.form['username']
+        result = cursor.execute("SELECT * FROM users WHERE username = %s", session['username'])
+        row = cursor.fetchone()
+        name = row['name']
+        cursor.execute("insert into articles (title,body,author) values (%s,%s,%s)", (title, body, name ))
 
         #commit to DB
         mysql.get_db().commit()
@@ -181,11 +186,10 @@ def add_article():
         #close DB
         cursor.close()
 
-        flash('Article Created','success')
+        flash('Article Created', 'success')
         return redirect(url_for('dashboard'))
 
     return render_template('add_article.html',form=form)
-
 
 
 if __name__ == "__main__":
