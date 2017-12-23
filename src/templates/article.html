@@ -1,7 +1,10 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-
-       <h1>{{idno}}</h1>
-
+       <h1>{{arti1.title}}</h1>
+       <small>Written by: {{arti1.author}} on {{arti1.create_date}}</small>
+       <hr>
+       <div>
+           {{arti1.body}}
+       </div>
 {% endblock %}

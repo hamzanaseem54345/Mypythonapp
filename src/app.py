@@ -1,5 +1,5 @@
 from flask import Flask,request,render_template,flash,redirect,session,url_for,logging
-from data import Articles
+#from data import Articles
 from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from functools import wraps
@@ -31,15 +31,54 @@ def index():
 def about():
     return render_template("about.html")
 
+# Check if user Logged in
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Unauthorized, Please Login','danger')
+            return redirect(url_for('login'))
+    return wrap
 
 @app.route("/articles")
+@is_logged_in
 def articles():
-    return render_template("articles.html",articles=Articles())
+
+    # create cursor and get connection
+    cursor = mysql.get_db().cursor()
+
+    # get articles
+    result = cursor.execute("select * from articles where author in( select name from users where username = %s)",
+                            session['username'])
+
+    arti = cursor.fetchall()
+
+    if result > 0:
+        return render_template("articles.html", arti=arti)
+    else:
+        msg = "No Articles Found try adding one"
+        return render_template("articles.html", msg=msg)
+
+    # Close Connection
+    cursor.close
+
 
 
 @app.route("/article/<string:idnumber>/")
 def article(idnumber):
-    return render_template("article.html", idno=idnumber)
+    # create cursor and get connection
+    cursor = mysql.get_db().cursor()
+
+    # get articles
+    result = cursor.execute("select * from articles where id = %s", [idnumber])
+    arti1 = cursor.fetchone()
+
+    if result > 0:
+         return render_template("article.html",arti1=arti1)
+
+    return render_template("article.html", arti1=arti1)
 
 
 #Register Form
@@ -125,16 +164,7 @@ def login():
 
     return render_template('login.html')
 
-# Check if user Logged in
-def is_logged_in(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('Unauthorized, Please Login','danger')
-            return redirect(url_for('login'))
-    return wrap
+
 
 
 # Logout
@@ -152,16 +182,31 @@ def logout():
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
-    return render_template('dashboard.html')
+     #create cursor and get connection
+    cursor = mysql.get_db().cursor()
 
-#Articles
+     #get articles
+    result=cursor.execute("select * from articles where author in( select name from users where username = %s)", session['username'])
+
+    arti = cursor.fetchall()
+
+    if result > 0:
+         return render_template("dashboard.html",arti=arti)
+    else:
+         msg="No Articles Found try adding one"
+         return render_template("dashboard.html",msg=msg)
+
+    #Close Connection
+    cursor.close
+
+
+
+#Add_Articles
 class ArticleForm(Form):
     title = StringField('Title',[validators.Length(min=1, max=300)])
     body = TextAreaField('Body',[validators.Length(min=50)])
 
-# Article Route
-
-
+# Add_Article Route
 @app.route('/add_article', methods=['GET', 'POST'])
 @is_logged_in
 def add_article():
